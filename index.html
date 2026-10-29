@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#101116">
+<title>EditLivre — protótipo</title>
+<style>
+:root{color-scheme:dark;--bg:#101116;--panel:#1a1c24;--line:#303340;--text:#f4f5f8;--muted:#a2a6b5;--accent:#8975ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui, sans-serif}
+main{max-width:760px;margin:auto;padding:16px}header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 18px;border-bottom:1px solid var(--line)}
+.brand{font-weight:850;font-size:21px}.tag{font-size:11px;color:#c8c0ff;border:1px solid #51478b;border-radius:99px;padding:5px 9px}
+h1{font-size:24px;margin:20px 0 4px}p{color:var(--muted);line-height:1.5}.panel{margin-top:16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px}
+.preview{aspect-ratio:9/13;max-height:55vh;background:#08090d;border-radius:12px;display:grid;place-items:center;overflow:hidden}
+video{width:100%;height:100%;object-fit:contain;background:#08090d}.empty{text-align:center;padding:20px;color:var(--muted)}.symbol{font-size:38px;color:var(--accent)}
+button,.pick{border:0;border-radius:11px;padding:12px 14px;background:#2b2e39;color:white;font:inherit;font-weight:700;display:inline-flex;justify-content:center;align-items:center;cursor:pointer}
+.pick,.primary{background:#7662f5;width:100%;margin-top:12px}.row{display:flex;gap:8px;margin-top:10px}.row button{flex:1}.field{margin-top:18px}.fieldtop{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px}.time{color:#c9c0ff;font-variant-numeric:tabular-nums}input[type=range]{width:100%;accent-color:var(--accent)}input[type=file]{display:none}.status{font-size:12px;color:var(--muted);margin-top:10px;min-height:18px}.track{height:10px;background:#343744;border-radius:99px;overflow:hidden;margin-top:10px}.selection{height:100%;background:linear-gradient(90deg,#7662f5,#b5a9ff)}.small{font-size:12px}.primary:disabled,button:disabled{opacity:.45}
+</style>
+</head>
+<body><main>
+<header><div class="brand">✂ EditLivre</div><span class="tag">PROTÓTIPO 0.1</span></header>
+<h1>Seu vídeo. Seu estilo.</h1><p>Primeiro, vamos importar um vídeo e ajustar o trecho que você quer usar.</p>
+<section class="panel">
+<div class="preview"><div class="empty" id="empty"><div class="symbol">▶</div><strong>Seu próximo edit começa aqui</strong><p>Escolha um vídeo do aparelho para começar.</p></div><video id="video" controls playsinline hidden></video></div>
+<label class="pick" for="file">＋ Escolher vídeo da galeria</label><input id="file" type="file" accept="video/*">
+<div class="status" id="filename">Nenhum vídeo selecionado.</div>
+<div class="row"><button id="play" disabled>▶ Reproduzir trecho</button><button id="reset" disabled>↺ Reiniciar</button></div>
+</section>
+<section class="panel">
+<strong>✂ Ajustar corte</strong><p class="small">Mova os controles para escolher o início e o fim. Esta primeira versão prepara a seleção; a exportação avançada será adicionada na próxima etapa.</p>
+<div class="field"><div class="fieldtop"><label for="start">Início</label><span class="time" id="startLabel">00:00.0</span></div><input id="start" type="range" min="0" max="100" value="0" step=".1" disabled></div>
+<div class="field"><div class="fieldtop"><label for="end">Fim</label><span class="time" id="endLabel">00:00.0</span></div><input id="end" type="range" min="0" max="100" value="100" step=".1" disabled></div>
+<div class="track"><div class="selection" id="selection" style="width:100%"></div></div>
+<div class="fieldtop" style="margin-top:9px"><span class="small">Duração selecionada</span><span class="time" id="length">00:00</span></div>
+<div class="status" id="status">Pronto para importar um vídeo.</div>
+</section>
+<p class="small">Protótipo experimental. Os vídeos são abertos localmente no navegador; não são enviados para um servidor.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id), v=$('video'), file=$('file'), s=$('start'), e=$('end');let dur=0,url='';
+function fmt(n,dec=false){if(!Number.isFinite(n)||n<0)n=0;let m=Math.floor(n/60),sec=n%60;return String(m).padStart(2,'0')+':'+(dec?sec.toFixed(1).padStart(4,'0'):String(Math.floor(sec)).padStart(2,'0'))}
+function update(){let a=+s.value,b=+e.value;$('startLabel').textContent=fmt(a,true);$('endLabel').textContent=fmt(b,true);$('length').textContent=fmt(Math.max(0,b-a));$('selection').style.marginLeft=(dur?a/dur*100:0)+'%';$('selection').style.width=(dur?Math.max(0,(b-a)/dur*100):100)+'%'}
+file.addEventListener('change',()=>{let f=file.files[0];if(!f)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(f);v.src=url;v.hidden=false;$('empty').hidden=true;$('filename').textContent=f.name;$('status').textContent='Carregando vídeo…';v.onloadedmetadata=()=>{dur=v.duration;if(!Number.isFinite(dur)||dur<=0){$('status').textContent='Não foi possível ler a duração deste vídeo.';return}s.max=dur;e.max=dur;s.value=0;e.value=dur;s.disabled=e.disabled=false;$('play').disabled=$('reset').disabled=false;$('status').textContent='Vídeo carregado. Ajuste o início e o fim.';update()};v.onerror=()=>{$('status').textContent='Formato não suportado pelo navegador. Tente um vídeo MP4.'}});
+s.addEventListener('input',()=>{if(+s.value>+e.value-.2)s.value=Math.max(0,+e.value-.2);if(v.currentTime<+s.value||v.currentTime>+e.value)v.currentTime=+s.value;update()});
+e.addEventListener('input',()=>{if(+e.value<+s.value+.2)e.value=Math.min(dur,+s.value+.2);if(v.currentTime>+e.value)v.currentTime=+s.value;update()});
+$('play').addEventListener('click',async()=>{v.currentTime=+s.value;try{await v.play();$('status').textContent='Reproduzindo trecho selecionado…'}catch(err){$('status').textContent='Toque no vídeo para iniciar a reprodução.'}});
+v.addEventListener('timeupdate',()=>{if(v.currentTime>=+e.value&&!v.paused){v.pause();v.currentTime=+s.value}});
+$('reset').addEventListener('click',()=>{v.pause();v.currentTime=0;$('status').textContent='Prévia reiniciada.'});
+update();
+</script></body></html>
