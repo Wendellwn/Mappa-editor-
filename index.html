@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#101116">
+<title>Mappa Editor — protótipo 0.2</title>
+<style>
+:root{color-scheme:dark;--bg:#101116;--panel:#1a1c24;--line:#303340;--text:#f4f5f8;--muted:#a2a6b5;--accent:#8b78ff;--yellow:#ffd447;--yellow2:#ffed9b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,sans-serif}
+main{max-width:780px;margin:auto;padding:15px}header{display:flex;justify-content:space-between;align-items:center;padding:8px 0 16px;border-bottom:1px solid var(--line)}
+.brand{font-weight:850;font-size:22px;letter-spacing:-.4px}.brand b{color:var(--accent)}.tag{font-size:11px;color:#d8d0ff;border:1px solid #51478b;border-radius:99px;padding:5px 9px}
+h1{font-size:23px;margin:19px 0 4px}p{color:var(--muted);line-height:1.48}.panel{margin-top:15px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:13px}
+.preview{aspect-ratio:9/13;max-height:48vh;background:#08090d;border-radius:12px;display:grid;place-items:center;overflow:hidden}
+video{width:100%;height:100%;object-fit:contain;background:#08090d}.empty{text-align:center;padding:20px;color:var(--muted)}.symbol{font-size:38px;color:var(--accent)}
+button,.pick{border:0;border-radius:11px;padding:12px 14px;background:#2b2e39;color:white;font:inherit;font-weight:700;display:inline-flex;justify-content:center;align-items:center;cursor:pointer}
+.pick,.primary{background:#7662f5;width:100%;margin-top:12px}.row{display:flex;gap:8px;margin-top:10px}.row button{flex:1}.small{font-size:12px}.status{font-size:12px;color:var(--muted);margin-top:10px;min-height:18px}input[type=file]{display:none}
+.field{margin-top:16px}.fieldtop{display:flex;justify-content:space-between;align-items:center;font-size:13px;margin-bottom:7px}.time{color:#d1c9ff;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent)}button:disabled{opacity:.45}
+.timelineHead{display:flex;align-items:center;justify-content:space-between;gap:8px}.durationPill{font-size:12px;background:#292b35;border-radius:8px;padding:6px 8px;color:#e3e4eb}
+.timelineWrap{margin-top:15px}.ruler{display:flex;justify-content:space-between;color:#888d9d;font-size:10px;margin-bottom:6px;padding:0 2px}
+.timeline{position:relative;height:76px;border-radius:10px;background:#0b0c11;border:1px solid #393c49;overflow:visible;touch-action:pan-y;user-select:none}
+.filmstrip{position:absolute;inset:4px;border-radius:6px;overflow:hidden;display:flex;background:linear-gradient(135deg,#282b38,#151720)}
+.frame{flex:1;min-width:0;border-right:1px solid #101116;background:linear-gradient(145deg,#3a3e50 0%,#252837 42%,#171923 43%,#393145 100%);position:relative}
+.frame:after{content:"";position:absolute;left:12%;right:12%;top:24%;height:48%;border-radius:3px;background:linear-gradient(135deg,#555b70,#252938);opacity:.7}
+.dim{position:absolute;top:0;bottom:0;background:rgba(0,0,0,.65);pointer-events:none;z-index:2}.dim.left{left:0}.dim.right{right:0}
+.selectedOutline{position:absolute;top:0;bottom:0;border:2px solid var(--yellow);border-radius:7px;z-index:3;pointer-events:none;box-shadow:0 0 0 1px #171717}
+.trimHandle{position:absolute;top:-5px;bottom:-5px;width:24px;transform:translateX(-50%);z-index:5;touch-action:none;cursor:ew-resize;display:flex;align-items:center;justify-content:center}
+.trimHandle:before{content:"";position:absolute;inset:0 4px;background:var(--yellow);border:2px solid #fff0a5;border-radius:7px;box-shadow:0 0 0 2px rgba(0,0,0,.45),0 0 14px rgba(255,212,71,.2)}
+.trimHandle:after{content:"";height:24px;width:3px;background:#544300;border-radius:4px;z-index:1}
+.handleLabel{font-size:11px;color:#24200e;background:var(--yellow);font-weight:900;border-radius:5px;padding:3px 6px;position:absolute;top:-25px;white-space:nowrap}
+.playhead{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;z-index:4;pointer-events:none;box-shadow:0 0 3px #000}
+.playhead:before{content:"";position:absolute;top:-2px;left:-4px;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid white}
+.legend{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;color:var(--muted);font-size:11px}.dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;background:var(--yellow)}
+.hint{margin-top:10px;padding:10px;border-radius:10px;background:#252319;color:#f6e7a5;font-size:12px;line-height:1.45}
+.track{height:8px;background:#343744;border-radius:99px;overflow:hidden;margin-top:12px}.selection{height:100%;background:linear-gradient(90deg,#7662f5,#b5a9ff)}
+.primary{background:#7662f5}.subtle{background:#30323d}.foot{font-size:11px;color:#777d8d;margin:15px 2px}
+</style>
+</head>
+<body><main>
+<header><div class="brand">✂ <b>Mappa</b> Editor</div><span class="tag">PROTÓTIPO 0.2</span></header>
+<h1>Seu vídeo. Seu estilo.</h1><p>Importe um vídeo e ajuste o trecho diretamente na linha do tempo.</p>
+<section class="panel">
+<div class="preview"><div class="empty" id="empty"><div class="symbol">▶</div><strong>Seu próximo edit começa aqui</strong><p>Escolha um vídeo do aparelho para começar.</p></div><video id="video" controls playsinline hidden></video></div>
+<label class="pick" for="file">＋ Escolher vídeo da galeria</label><input id="file" type="file" accept="video/*">
+<div class="status" id="filename">Nenhum vídeo selecionado.</div>
+<div class="row"><button id="play" disabled>▶ Reproduzir trecho</button><button id="reset" disabled>↺ Voltar ao início</button></div>
+</section>
+<section class="panel">
+<div class="timelineHead"><strong>✂ Linha do tempo</strong><span class="durationPill" id="totalDuration">Duração: --:--</span></div>
+<p class="small">Arraste a barrinha amarela na borda direita para encurtar ou ampliar o trecho. Tudo depois dela fica fora da seleção automaticamente.</p>
+<div class="timelineWrap">
+<div class="ruler"><span id="rulerStart">00:00</span><span id="rulerMid">Meio</span><span id="rulerEnd">00:00</span></div>
+<div class="timeline" id="timeline" aria-label="Linha do tempo do vídeo">
+  <div class="filmstrip" id="filmstrip"><div class="frame"></div><div class="frame"></div><div class="frame"></div><div class="frame"></div><div class="frame"></div><div class="frame"></div><div class="frame"></div><div class="frame"></div></div>
+  <div class="dim left" id="leftDim" style="width:0"></div><div class="dim right" id="rightDim" style="width:0"></div>
+  <div class="selectedOutline" id="outline" style="left:0;width:100%"></div>
+  <div class="playhead" id="playhead" style="left:0"></div>
+  <div class="trimHandle" id="endHandle" role="slider" aria-label="Ponto final do corte" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" style="left:100%"><span class="handleLabel">ARRASTE</span></div>
+</div>
+<div class="legend"><span><i class="dot"></i> Ponto final do corte</span><span>Área selecionada = trecho mantido</span></div>
+</div>
+<div class="field"><div class="fieldtop"><label for="start">Início do trecho</label><span class="time" id="startLabel">00:00.0</span></div><input id="start" type="range" min="0" max="100" value="0" step=".1" disabled></div>
+<div class="field"><div class="fieldtop"><label for="end">Fim do trecho</label><span class="time" id="endLabel">00:00.0</span></div><input id="end" type="range" min="0" max="100" value="100" step=".1" disabled></div>
+<div class="track"><div class="selection" id="selection" style="width:100%"></div></div>
+<div class="fieldtop" style="margin-top:9px"><span class="small">Duração selecionada</span><span class="time" id="length">00:00</span></div>
+<div class="hint">Dica: toque e segure a barrinha amarela e arraste para a esquerda. O fim do trecho acompanha a barrinha; você não precisa selecionar e apagar o restante manualmente.</div>
+<div class="status" id="status">Pronto para importar um vídeo.</div>
+</section>
+<p class="foot">Protótipo experimental. O vídeo é processado localmente no navegador e não é enviado para um servidor. A linha do tempo define o trecho da prévia; exportar um novo arquivo cortado será uma etapa futura.</p>
+</main>
+<script>
+const $=id=>document.getElementById(id), v=$('video'), file=$('file'), s=$('start'), e=$('end'), timeline=$('timeline'), handle=$('endHandle');
+let dur=0,url='',dragging=false;
+function fmt(n,dec=false){if(!Number.isFinite(n)||n<0)n=0;let m=Math.floor(n/60),sec=n%60;return String(m).padStart(2,'0')+':'+(dec?sec.toFixed(1).padStart(4,'0'):String(Math.floor(sec)).padStart(2,'0'))}
+function pct(t){return dur>0?Math.max(0,Math.min(100,t/dur*100)):100}
+function update(){
+ let a=+s.value,b=+e.value,ap=pct(a),bp=pct(b);
+ $('startLabel').textContent=fmt(a,true);$('endLabel').textContent=fmt(b,true);$('length').textContent=fmt(Math.max(0,b-a));$('selection').style.marginLeft=ap+'%';$('selection').style.width=Math.max(0,bp-ap)+'%';
+ $('leftDim').style.width=ap+'%';$('rightDim').style.width=(100-bp)+'%';$('outline').style.left=ap+'%';$('outline').style.width=Math.max(0,bp-ap)+'%';handle.style.left=bp+'%';handle.setAttribute('aria-valuenow',String(b));$('playhead').style.left=pct(v.currentTime||0)+'%';
+ $('totalDuration').textContent='Duração: '+fmt(dur);$('rulerStart').textContent='00:00';$('rulerMid').textContent=fmt(dur/2);$('rulerEnd').textContent=fmt(dur);
+}
+function setEnd(t){if(!dur)return;let min=Math.min(dur,+s.value+.2);t=Math.max(min,Math.min(dur,t));e.value=t;if(v.currentTime>t){v.pause();v.currentTime=+s.value}update()}
+function setFromPointer(ev){const r=timeline.getBoundingClientRect();setEnd(((ev.clientX-r.left)/r.width)*dur)}
+file.addEventListener('change',()=>{let f=file.files[0];if(!f)return;if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(f);v.src=url;v.hidden=false;$('empty').hidden=true;$('filename').textContent=f.name;$('status').textContent='Carregando vídeo…';v.onloadedmetadata=()=>{dur=v.duration;if(!Number.isFinite(dur)||dur<=0){$('status').textContent='Não foi possível ler a duração deste vídeo.';return}s.max=dur;e.max=dur;s.value=0;e.value=dur;s.disabled=e.disabled=false;$('play').disabled=$('reset').disabled=false;$('status').textContent='Vídeo carregado. Arraste a barrinha amarela para definir o fim do trecho.';update()};v.onerror=()=>{$('status').textContent='Formato não suportado pelo navegador. Tente um vídeo MP4.'}});
+s.addEventListener('input',()=>{if(+s.value>+e.value-.2)s.value=Math.max(0,+e.value-.2);if(v.currentTime<+s.value||v.currentTime>+e.value)v.currentTime=+s.value;update()});
+e.addEventListener('input',()=>{if(+e.value<+s.value+.2)e.value=Math.min(dur,+s.value+.2);if(v.currentTime>+e.value)v.currentTime=+s.value;update()});
+handle.addEventListener('pointerdown',ev=>{if(!dur)return;dragging=true;handle.setPointerCapture(ev.pointerId);ev.preventDefault();$('status').textContent='Ajustando o fim do trecho…'});
+handle.addEventListener('pointermove',ev=>{if(dragging)setFromPointer(ev)});
+function stopDrag(){if(dragging){dragging=false;$('status').textContent='Fim do trecho ajustado para '+fmt(+e.value,true)+'. O trecho selecionado foi atualizado.'}}
+handle.addEventListener('pointerup',stopDrag);handle.addEventListener('pointercancel',stopDrag);
+timeline.addEventListener('pointerdown',ev=>{if(!dur||ev.target===handle||handle.contains(ev.target))return;const r=timeline.getBoundingClientRect(),x=ev.clientX-r.left,handleX=(+e.value/dur)*r.width;if(Math.abs(x-handleX)<22){dragging=true;handle.setPointerCapture?.(ev.pointerId);setFromPointer(ev)}});
+$('play').addEventListener('click',async()=>{if(!dur)return;v.currentTime=+s.value;try{await v.play();$('status').textContent='Reproduzindo o trecho selecionado…'}catch(err){$('status').textContent='Toque no vídeo para iniciar a reprodução.'}});
+v.addEventListener('timeupdate',()=>{if(v.currentTime>=+e.value&&!v.paused){v.pause();v.currentTime=+s.value}if(!dragging)update()});
+$('reset').addEventListener('click',()=>{v.pause();v.currentTime=+s.value;$('status').textContent='Prévia posicionada no início do trecho selecionado.';update()});
+update();
+</script></body></html>
