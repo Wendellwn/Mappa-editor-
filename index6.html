@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mappa Editor v4.2</title>
+<style>
+/* ===== CORES (mude aqui) ===== */
+:root{
+  --bg:#0b0b12; --panel:#13131d; --card:#1b1b28; --line:#262636;
+  --txt:#f2f2f7; --mut:#8d8da3; --roxo:#8b5cf6; --roxo2:#a78bfa;
+  --ciano:#22d3ee; --verm:#ff4d4d; --amar:#facc15;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#07070b;color:var(--txt);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{max-width:560px;height:100dvh;margin:0 auto;background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+
+/* ===== TOPO ===== */
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--panel);border-bottom:2px solid var(--line)}
+.logo{font-size:20px;font-weight:600}.logo b{color:var(--roxo2);font-weight:600}
+.ver{font-size:11px;color:var(--mut);background:var(--card);padding:3px 8px;border-radius:8px;margin-left:6px}
+.topo-dir{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--mut)}.topo-dir b{color:var(--txt)}
+#btnExp{background:var(--roxo);padding:10px 18px;border-radius:20px;font-weight:600;box-shadow:0 4px 14px #8b5cf655}
+
+/* ===== PREVIEW ===== */
+#stage{position:relative;flex:1 1 0;min-height:160px;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#vid{max-width:100%;max-height:100%;display:none;transition:filter .2s,transform .2s,opacity .2s}
+#vazio{position:absolute;text-align:center;color:var(--mut)}
+#vazio p{margin-bottom:12px;font-size:15px}
+#btnAdd{background:var(--roxo);color:#fff;padding:12px 24px;border-radius:24px;font-weight:600}
+.lado{position:absolute;display:flex;flex-direction:column;gap:10px;top:50%;transform:translateY(-50%)}
+.lado.e{left:10px}.lado.d{right:10px}
+.lado button{width:40px;height:40px;border-radius:12px;background:#1b1b28cc;border:1px solid var(--line);font-size:15px}
+
+/* ===== CONTROLES ===== */
+#ctrl{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--panel);font-size:13px;color:var(--mut)}
+#ctrl div{display:flex;gap:26px;align-items:center;color:var(--txt);font-size:18px}
+
+/* ===== LINHA DO TEMPO ===== */
+#tl{position:relative;height:96px;background:var(--bg);overflow-x:auto;overflow-y:hidden;border-bottom:1px solid var(--line)}
+#trilho{position:relative;height:100%;min-width:100%}
+#semVid{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--mut);font-size:14px}
+.clipe{position:absolute;top:22px;height:52px;border-radius:10px;background:linear-gradient(135deg,#4c3a8f,#6d4fd6);border:2px solid transparent;overflow:hidden;font-size:11px;padding:6px 8px;color:#e9e3ff;white-space:nowrap}
+.clipe.sel{border-color:var(--amar)}
+#head{position:absolute;top:0;bottom:0;width:2px;background:var(--verm);box-shadow:0 0 8px var(--verm);pointer-events:none;left:0}
+#head::before{content:"";position:absolute;top:0;left:-6px;border:7px solid transparent;border-top:9px solid var(--verm)}
+
+/* ===== ABAS + FAIXA DE ÁUDIO ===== */
+#abas{display:flex;gap:8px;padding:10px 10px 6px;overflow-x:auto;background:var(--panel);scrollbar-width:none}
+#abas::-webkit-scrollbar{display:none}
+#abas button{flex:none;padding:8px 12px;border-radius:10px;background:var(--bg);border:1px solid var(--line);font-size:13px;white-space:nowrap}
+#abas button.on{background:var(--roxo);border-color:var(--roxo2)}
+#faixa{margin:6px 10px 10px;padding:8px 12px;border-radius:10px;border:1px solid var(--ciano);background:#0e2a33;color:var(--ciano);font-size:12px;display:flex;align-items:center;gap:10px}
+#faixa i{flex:1;height:14px;background:repeating-linear-gradient(90deg,var(--ciano) 0 2px,transparent 2px 5px);opacity:.8}
+#faixa{background:#0b1f26}
+
+/* ===== ÁREA DE TRABALHO ===== */
+#area{flex:0 0 auto;border-top:2px solid var(--line);background:var(--bg);padding:10px 12px;min-height:128px}
+#area h4{font-size:11px;letter-spacing:.6px;color:var(--mut);margin-bottom:10px;text-transform:uppercase}
+.fx{display:flex;gap:10px;overflow-x:auto}
+.fx button{flex:none;width:80px;padding:10px 0 8px;border-radius:12px;background:var(--card);border:1px solid var(--line);font-size:12px;color:#cfcfe0}
+.fx button.on{border-color:var(--roxo2);background:#2a2150}
+.fx span{display:flex;width:38px;height:38px;margin:0 auto 6px;border-radius:10px;align-items:center;justify-content:center;font-size:18px}
+.sl{display:grid;grid-template-columns:60px 1fr 48px;gap:10px;align-items:center;font-size:13px;margin-bottom:8px;color:var(--mut)}
+.sl input{width:100%;accent-color:var(--roxo)}
+
+/* ===== BARRA INFERIOR ===== */
+nav{display:flex;background:var(--panel);border-top:1px solid var(--line);padding:8px 0 calc(8px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;color:var(--txt)}
+nav button b{font-size:20px;font-weight:400}
+nav button:disabled{opacity:.3;cursor:default}
+#toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--card);border:1px solid var(--line);padding:10px 16px;border-radius:12px;font-size:13px;opacity:0;pointer-events:none;transition:opacity .25s}
+#toast.on{opacity:1}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div><span class="logo">Mappa<b>Editor</b></span><span class="ver">v4.2</span></div>
+    <div class="topo-dir"><span>Total: <b id="total">0:00.0</b></span><button id="btnExp">Exportar</button></div>
+  </header>
+
+  <div id="stage">
+    <video id="vid" playsinline></video>
+    <div id="vazio"><p>Sua área de edição está vazia</p><button id="btnAdd">➕ Adicionar Vídeo</button></div>
+    <div class="lado e"><button id="bFull">⛶</button><button id="bProp">❏</button></div>
+    <div class="lado d"><button id="bZoom">🔍</button><button id="bMudo">🔉</button></div>
+  </div>
+
+  <div id="ctrl">
+    <span id="tempo">0:00.0 / 0:00.0</span>
+    <div><button id="bPrev">⏮</button><button id="bPlay">▶</button><button id="bNext">⏭</button></div>
+  </div>
+
+  <div id="tl"><div id="trilho"><div id="semVid">Sem vídeos na linha do tempo</div><div id="head"></div></div></div>
+
+  <div id="abas">
+    <button class="on" data-a="camada">📁 <span id="nCam">1 Camada</span></button>
+    <button data-a="cortar">✂️ Cortar</button>
+    <button data-a="ajuste">⚙️ Ajuste</button>
+    <button data-a="efeitos">✨ Efeitos</button>
+    <button data-a="texto">📝 Texto</button>
+    <button data-a="audio">🎵 Áudio</button>
+    <button data-a="fundo">🖼 Fundo</button>
+  </div>
+  <div id="faixa">🎵 Faixa Principal <i></i> 100%</div>
+
+  <div id="area"></div>
+
+  <nav>
+    <button id="nAdd"><b>➕</b>Adicionar</button>
+    <button id="nDiv" disabled><b>✂️</b>Dividir</button>
+    <button id="nAju" disabled><b>📐</b>Ajuste</button>
+    <button id="nDup" disabled><b>📋</b>Duplicar</button>
+    <button id="nFil"><b>🎨</b>Filtros</button>
+    <button id="nDel" disabled><b>🗑</b>Excluir</button>
+  </nav>
+</div>
+<input type="file" id="file" accept="video/*" multiple hidden>
+<div id="toast"></div>
+
+<script>
+/* ===== ESTADO ===== */
+const PX = 40;                 // pixels por segundo na linha do tempo
+let clips = [];                // {url,nome,dur,ini,fim,fx}
+let sel = -1, gt = 0, tocando = false, atual = -1, painel = 'fx';
+const $ = id => document.getElementById(id);
+const vid = $('vid');
+
+/* ===== EFEITOS (CSS) ===== */
+const FX = {
+  glitch:{ic:'⚡',nome:'Glitch',cor:'linear-gradient(135deg,#06b6d4,#3b82f6)',css:'hue-rotate(90deg) contrast(1.4) saturate(1.6)'},
+  zoom:{ic:'🔍',nome:'Zoom',cor:'linear-gradient(135deg,#a855f7,#ec4899)',tf:'scale(1.25)'},
+  blur:{ic:'💧',nome:'Blur',cor:'linear-gradient(135deg,#64748b,#475569)',css:'blur(4px)'},
+  fade:{ic:'🌅',nome:'Fade',cor:'linear-gradient(135deg,#f43f5e,#fb923c)',css:'brightness(.6)',op:.8},
+  anim:{ic:'🎬',nome:'Animação',cor:'linear-gradient(135deg,#f59e0b,#d97706)',tf:'rotate(-3deg) scale(1.05)'}
+};
+
+/* ===== UTILIDADES ===== */
+const len = c => c.fim - c.ini;
+const fmt = s => { s = Math.max(0, s); return Math.floor(s/60) + ':' + (s%60).toFixed(1).padStart(4,'0'); };
+const totalDur = () => clips.reduce((a,c)=>a+len(c),0);
+const offset = i => clips.slice(0,i).reduce((a,c)=>a+len(c),0);
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(toast.t); toast.t=setTimeout(()=>t.classList.remove('on'),1800); }
+
+/* ===== ADICIONAR VÍDEOS ===== */
+$('btnAdd').onclick = $('nAdd').onclick = () => $('file').click();
+$('file').onchange = async e => {
+  for (const f of e.target.files) {
+    const url = URL.createObjectURL(f);
+    const dur = await new Promise(r => {
+      const v = document.createElement('video'); v.preload = 'metadata'; v.src = url;
+      v.onloadedmetadata = () => r(v.duration || 0); v.onerror = () => r(0);
+    });
+    if (dur) clips.push({url, nome:f.name, dur, ini:0, fim:dur, fx:null});
+    else toast('Não consegui abrir: ' + f.name);
+  }
+  e.target.value = '';
+  if (sel < 0 && clips.length) sel = 0;
+  atual = -1; seek(gt); render();
+};
+
+/* ===== REPRODUÇÃO ===== */
+function seek(g){
+  const T = totalDur(); gt = Math.min(Math.max(0,g), T);
+  if (!clips.length) return;
+  let i = 0, acc = 0;
+  while (i < clips.length-1 && gt >= acc + len(clips[i])) { acc += len(clips[i]); i++; }
+  const c = clips[i];
+  if (atual !== i) { atual = i; vid.src = c.url; aplicaFx(c); }
+  vid.currentTime = c.ini + (gt - acc);
+  atualizaUI();
+}
+function aplicaFx(c){
+  const f = c.fx && FX[c.fx];
+  vid.style.filter = f && f.css || ''; vid.style.transform = f && f.tf || ''; vid.style.opacity = f && f.op || 1;
+}
+function play(){
+  if (!clips.length) return;
+  if (gt >= totalDur() - 0.05) seek(0);
+  tocando = true; vid.play(); $('bPlay').textContent = '⏸';
+}
+function pause(){ tocando = false; vid.pause(); $('bPlay').textContent = '▶'; }
+$('bPlay').onclick = () => tocando ? pause() : play();
+$('bPrev').onclick = () => seek(atual > 0 ? offset(atual-1) : 0);
+$('bNext').onclick = () => atual < clips.length-1 && seek(offset(atual+1));
+
+vid.ontimeupdate = () => {
+  if (!tocando || atual < 0) return;
+  const c = clips[atual];
+  if (vid.currentTime >= c.fim - 0.03) {
+    if (atual < clips.length-1) { seek(offset(atual+1)); vid.play(); }
+    else { pause(); seek(totalDur()); }
+    return;
+  }
+  gt = offset(atual) + (vid.currentTime - c.ini); atualizaUI();
+};
+
+/* ===== LINHA DO TEMPO ===== */
+$('trilho').onclick = e => {
+  if (!clips.length) return;
+  const x = e.clientX - $('trilho').getBoundingClientRect().left;
+  const g = x / PX; let acc = 0;
+  for (let i=0;i<clips.length;i++){ if (g < acc+len(clips[i]) || i===clips.length-1){ sel = i; break; } acc += len(clips[i]); }
+  seek(g); render();
+};
+function atualizaUI(){
+  $('tempo').textContent = fmt(gt) + ' / ' + fmt(totalDur());
+  $('total').textContent = fmt(totalDur());
+  $('head').style.left = (gt * PX) + 'px';
+}
+
+/* ===== EDIÇÃO ===== */
+function dividir(){
+  if (sel < 0) return;
+  const c = clips[sel], local = c.ini + (gt - offset(sel));
+  if (local <= c.ini + 0.2 || local >= c.fim - 0.2) return toast('Posicione o marcador dentro do clipe');
+  clips.splice(sel+1, 0, {...c, ini:local}); c.fim = local; atual = -1; seek(gt); render();
+}
+function duplicar(){ if (sel<0) return; clips.splice(sel+1,0,{...clips[sel]}); sel++; atual=-1; render(); }
+function excluir(){
+  if (sel<0) return; clips.splice(sel,1);
+  if (!clips.length){ sel=-1; atual=-1; pause(); vid.removeAttribute('src'); vid.load(); gt=0; }
+  else { sel = Math.min(sel, clips.length-1); atual=-1; seek(Math.min(gt,totalDur())); }
+  render();
+}
+$('nDiv').onclick = dividir; $('nDup').onclick = duplicar; $('nDel').onclick = excluir;
+$('nAju').onclick = () => { painel='adj'; render(); };
+$('nFil').onclick = () => { painel='fx'; render(); };
+
+/* ===== ABAS ===== */
+document.querySelectorAll('#abas button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#abas button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  const a = b.dataset.a;
+  if (a==='cortar') dividir();
+  else if (a==='ajuste') { painel='adj'; render(); }
+  else if (a==='efeitos') { painel='fx'; render(); }
+  else if (a!=='camada') toast('Em breve!');
+});
+
+/* ===== BOTÕES DA PREVIEW ===== */
+$('bFull').onclick = () => $('stage').requestFullscreen && $('stage').requestFullscreen();
+$('bMudo').onclick = () => { vid.muted = !vid.muted; $('bMudo').textContent = vid.muted ? '🔇' : '🔉'; };
+$('bProp').onclick = () => toast('Proporção: em breve');
+$('bZoom').onclick = () => toast('Zoom da preview: em breve');
+$('btnExp').onclick = () => toast('Exportação chega numa próxima versão');
+
+/* ===== DESENHO DA TELA ===== */
+function render(){
+  const has = clips.length > 0, tem = sel >= 0;
+  vid.style.display = has ? 'block' : 'none'; $('vazio').style.display = has ? 'none' : 'block';
+  $('semVid').style.display = has ? 'none' : 'flex';
+  ['nDiv','nAju','nDup','nDel'].forEach(id => $(id).disabled = !tem);
+  $('nCam').textContent = Math.max(1, clips.length) + (clips.length>1 ? ' Camadas' : ' Camada');
+
+  $('trilho').style.width = Math.max(totalDur()*PX + 40, 0) + 'px';
+  $('trilho').querySelectorAll('.clipe').forEach(n => n.remove());
+  clips.forEach((c,i) => {
+    const d = document.createElement('div'); d.className = 'clipe' + (i===sel?' sel':'');
+    d.style.left = offset(i)*PX + 'px'; d.style.width = len(c)*PX - 2 + 'px';
+    d.textContent = c.nome; $('trilho').appendChild(d);
+  });
+
+  const a = $('area');
+  if (painel==='adj' && tem) {
+    const c = clips[sel];
+    a.innerHTML = '<h4>Ajuste de trecho</h4>' +
+      '<div class="sl">Início<input type="range" id="sI" min="0" max="'+c.dur+'" step="0.1" value="'+c.ini+'"><span id="vI">'+fmt(c.ini)+'</span></div>' +
+      '<div class="sl">Fim<input type="range" id="sF" min="0" max="'+c.dur+'" step="0.1" value="'+c.fim+'"><span id="vF">'+fmt(c.fim)+'</span></div>';
+    $('sI').oninput = e => { c.ini = Math.min(+e.target.value, c.fim-0.3); $('vI').textContent = fmt(c.ini); ajusta(); };
+    $('sF').oninput = e => { c.fim = Math.max(+e.target.value, c.ini+0.3); $('vF').textContent = fmt(c.fim); ajusta(); };
+  } else {
+    const c = tem ? clips[sel] : null;
+    a.innerHTML = '<h4>Área de trabalho — Efeitos &amp; Transições</h4><div class="fx">' +
+      Object.entries(FX).map(([k,f]) => '<button data-k="'+k+'" class="'+(c&&c.fx===k?'on':'')+'"><span style="background:'+f.cor+'">'+f.ic+'</span>'+f.nome+'</button>').join('') + '</div>';
+    a.querySelectorAll('.fx button').forEach(b => b.onclick = () => {
+      if (!c) return toast('Adicione e selecione um clipe');
+      c.fx = c.fx === b.dataset.k ? null : b.dataset.k; atual = -1; seek(gt); render();
+    });
+  }
+  atualizaUI();
+}
+function ajusta(){   // atualiza só a linha do tempo enquanto arrasta os sliders
+  $('trilho').style.width = totalDur()*PX + 40 + 'px';
+  $('trilho').querySelectorAll('.clipe').forEach((n,i) => { n.style.left = offset(i)*PX+'px'; n.style.width = len(clips[i])*PX-2+'px'; });
+  atual = -1; seek(Math.min(gt,totalDur()));
+}
+render();
+</script>
+</body>
+</html>
